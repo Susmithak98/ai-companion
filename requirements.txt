@@ -1,0 +1,23 @@
+
+wave
+ollama
+openai
+
+pyaudio==0.2.14
+webrtcvad==2.0.10
+
+# AI & ML
+whisper==1.5.1
+torch==2.3.1
+transformers==4.41.2
+textblob==0.17.1
+
+# Voice output  
+pyttsx3==2.90
+
+# Web requests
+requests==2.32.3
+
+# Utilities
+numpy==1.26.4
+tqdm==4.66.4

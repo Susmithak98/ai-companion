@@ -1,0 +1,9 @@
+venv/
+venv311/
+outputs/
+voice_samples/
+__pycache__/
+*.pyc
+*.wav
+*.mp3
+.env
