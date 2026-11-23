@@ -7,3 +7,6 @@ __pycache__/
 *.wav
 *.mp3
 .env
+# personal conversation data stays local
+aira_memory.json
+aira_moods.csv
