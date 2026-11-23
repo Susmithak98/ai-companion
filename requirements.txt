@@ -1,23 +1,11 @@
-
-wave
-ollama
-openai
-
+# Voice input
 pyaudio==0.2.14
 webrtcvad==2.0.10
+openai-whisper==20240930
 
-# AI & ML
-whisper==1.5.1
-torch==2.3.1
-transformers==4.41.2
-textblob==0.17.1
-
-# Voice output  
-pyttsx3==2.90
-
-# Web requests
+# Understanding + replies
+textblob==0.18.0.post0
 requests==2.32.3
 
-# Utilities
-numpy==1.26.4
-tqdm==4.66.4
+# Voice output
+pyttsx3==2.98

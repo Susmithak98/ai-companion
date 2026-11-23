@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aira — AI Companion · Live Demo · Susmitha Kotharu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#05060f; --panel:rgba(16,19,42,.6); --border:rgba(140,160,255,.15); --text:#e8ebff; --muted:#9aa1c7;
+    --cyan:#22d3ee; --violet:#a78bfa; --pink:#f472b6; --green:#34d399; --amber:#fbbf24; --red:#f87171;
+    --grad:linear-gradient(120deg,var(--cyan),var(--violet) 55%,var(--pink)); --mono:"JetBrains Mono",monospace; --sans:"Space Grotesk",system-ui,sans-serif; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:radial-gradient(1000px 700px at 80% 0%,#1a1440 0%,var(--bg) 60%) fixed; color:var(--text); font-family:var(--sans); min-height:100vh; }
+  a { color:inherit; text-decoration:none; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:18px 5vw; border-bottom:1px solid var(--border); backdrop-filter:blur(10px); position:sticky; top:0; z-index:5; background:rgba(5,6,15,.6); }
+  .back { font-family:var(--mono); font-size:13px; color:var(--muted); } .back:hover { color:var(--cyan); }
+  .tag { font-family:var(--mono); font-size:12px; padding:5px 12px; border:1px solid var(--border); border-radius:99px; color:var(--green); }
+  .wrap { max-width:1240px; margin:0 auto; padding:36px 5vw 60px; }
+  h1 { font-size:clamp(32px,4.5vw,52px); line-height:1.05; } h1 span { background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .lead { color:var(--muted); max-width:760px; margin:14px 0 8px; font-size:17px; line-height:1.6; }
+  .note { font-family:var(--mono); font-size:12px; color:var(--amber); margin-bottom:26px; }
+  .grid { display:grid; grid-template-columns:1.5fr 1fr; gap:22px; }
+  @media (max-width:900px) { .grid { grid-template-columns:1fr; } }
+  .glass { background:var(--panel); border:1px solid var(--border); border-radius:18px; backdrop-filter:blur(14px); }
+  /* chat */
+  .chat { display:flex; flex-direction:column; height:620px; }
+  .chat-head { display:flex; align-items:center; gap:14px; padding:16px 20px; border-bottom:1px solid var(--border); }
+  .orb { width:46px; height:46px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff6,transparent 40%),var(--grad); box-shadow:0 0 24px rgba(167,139,250,.7); animation:breathe 4s ease-in-out infinite; }
+  .orb.talking { animation:pulse .5s ease-in-out infinite alternate; }
+  @keyframes breathe { 50% { transform:scale(1.06); } } @keyframes pulse { to { transform:scale(1.15); box-shadow:0 0 40px rgba(34,211,238,.9); } }
+  .chat-head b { font-size:18px; } .chat-head small { display:block; color:var(--muted); font-size:12.5px; }
+  .mood-pill { margin-left:auto; font-family:var(--mono); font-size:12px; padding:5px 11px; border-radius:99px; border:1px solid var(--border); }
+  .msgs { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px; }
+  .msg { max-width:80%; padding:11px 15px; border-radius:16px; line-height:1.5; font-size:15px; white-space:pre-line; animation:in .3s ease; }
+  @keyframes in { from { opacity:0; transform:translateY(6px); } }
+  .msg.aira { background:rgba(167,139,250,.12); border:1px solid rgba(167,139,250,.25); border-bottom-left-radius:4px; align-self:flex-start; }
+  .msg.user { background:rgba(34,211,238,.12); border:1px solid rgba(34,211,238,.25); border-bottom-right-radius:4px; align-self:flex-end; }
+  .msg.crisis { background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.45); }
+  .msg .meta { display:block; font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:6px; }
+  .typing { align-self:flex-start; color:var(--muted); font-family:var(--mono); font-size:13px; }
+  .composer { display:flex; gap:10px; padding:14px; border-top:1px solid var(--border); }
+  .composer input { flex:1; background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:12px; padding:12px 14px; color:var(--text); font:inherit; outline:none; }
+  .composer input:focus { border-color:var(--violet); }
+  button { font:inherit; cursor:pointer; }
+  .btn { border:1px solid var(--border); background:rgba(255,255,255,.06); color:var(--text); border-radius:12px; padding:10px 14px; font-weight:500; transition:.2s; }
+  .btn:hover { border-color:var(--cyan); color:var(--cyan); }
+  .btn.primary { background:var(--grad); color:#07081a; border:0; }
+  .btn.rec { border-color:var(--red); color:var(--red); }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; padding:0 14px 14px; }
+  .chip { font-size:12.5px; padding:6px 11px; border-radius:99px; border:1px dashed var(--border); color:var(--muted); background:none; }
+  .chip:hover { color:var(--text); border-color:var(--violet); }
+  /* side */
+  .side { display:flex; flex-direction:column; gap:18px; }
+  .card { padding:18px 20px; }
+  .card h3 { font-size:14px; font-family:var(--mono); color:var(--cyan); letter-spacing:.08em; text-transform:uppercase; margin-bottom:12px; }
+  .pipe { display:flex; flex-direction:column; gap:6px; }
+  .step { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; border:1px solid transparent; font-size:14px; color:var(--muted); transition:.25s; }
+  .step i { width:9px; height:9px; border-radius:50%; background:#3a3f6b; flex:none; }
+  .step code { margin-left:auto; font-family:var(--mono); font-size:11.5px; color:#7e86b8; }
+  .step.active { border-color:rgba(34,211,238,.5); color:var(--text); background:rgba(34,211,238,.08); }
+  .step.active i { background:var(--cyan); box-shadow:0 0 10px var(--cyan); }
+  .step.done i { background:var(--green); } .step.done { color:#cfd5ff; }
+  .kv { font-size:14px; color:var(--muted); line-height:1.7; } .kv b { color:var(--text); font-weight:500; }
+  .facts { list-style:none; font-size:13.5px; color:#cfd5ff; } .facts li { padding:4px 0; border-bottom:1px dashed var(--border); }
+  .bars { display:flex; flex-direction:column; gap:7px; }
+  .bar { display:grid; grid-template-columns:70px 1fr 26px; gap:8px; align-items:center; font-size:13px; color:var(--muted); }
+  .bar div { height:8px; border-radius:4px; background:rgba(255,255,255,.06); overflow:hidden; } .bar span { display:block; height:100%; border-radius:4px; transition:width .4s; }
+  .about { margin-top:30px; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px; }
+  .about .card p, .about .card li { color:var(--muted); font-size:14.5px; line-height:1.6; } .about ul { padding-left:18px; }
+  .stack { display:flex; flex-wrap:wrap; gap:6px; } .stack span { font-family:var(--mono); font-size:12px; padding:4px 9px; border-radius:7px; background:rgba(255,255,255,.05); color:#c9cff5; }
+  .breath { margin-top:10px; display:flex; align-items:center; gap:14px; }
+  .breath .ball { width:46px; height:46px; border-radius:50%; background:radial-gradient(circle,var(--cyan),transparent 70%); animation:box 16s linear infinite; }
+  @keyframes box { 0%{transform:scale(.6)} 25%{transform:scale(1.2)} 50%{transform:scale(1.2)} 75%{transform:scale(.6)} 100%{transform:scale(.6)} }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="https://susmithak98.github.io/">← Susmitha Kotharu · Portfolio</a>
+  <span class="tag">● Live demo · ai-companion</span>
+</header>
+<div class="wrap">
+  <h1>Aira — <span>AI Voice Companion</span></h1>
+  <p class="lead">A warm, empathetic companion that listens, detects emotion, remembers what matters to you, tracks your mood, and responds like a caring friend who understands Indian culture, family pressure, homesickness and NRI life.</p>
+  <p class="note">⚡ This browser demo uses the same emotion, crisis, memory and mood agents as the app, with rule-based replies. The full app runs offline with Whisper speech-to-text and the Ollama phi3:mini LLM.</p>
+
+  <div class="grid">
+    <section class="glass chat">
+      <div class="chat-head">
+        <div class="orb" id="orb"></div>
+        <div><b>Aira</b><small>Empathetic companion · speaks back to you</small></div>
+        <span class="mood-pill" id="mood-pill">mood: neutral</span>
+      </div>
+      <div class="msgs" id="msgs"></div>
+      <div class="chips" id="chips"></div>
+      <form class="composer" id="form">
+        <button type="button" class="btn" id="mic" title="Speak to Aira">🎙️</button>
+        <input id="input" autocomplete="off" placeholder="Talk to Aira… e.g. “My name is Priya and I feel homesick”" />
+        <button class="btn primary" type="submit">Send</button>
+        <button type="button" class="btn" id="voice" title="Toggle Aira's voice">🔊</button>
+      </form>
+    </section>
+
+    <aside class="side">
+      <div class="glass card">
+        <h3>Agent pipeline</h3>
+        <div class="pipe" id="pipe">
+          <div class="step" data-s="listen"><i></i>Listener<code>webrtcvad</code></div>
+          <div class="step" data-s="transcribe"><i></i>Transcriber<code>whisper</code></div>
+          <div class="step" data-s="emotion"><i></i>Emotion detector<code>keywords+TextBlob</code></div>
+          <div class="step" data-s="crisis"><i></i>Crisis check<code>agents.py</code></div>
+          <div class="step" data-s="memory"><i></i>Memory agent<code>aira_memory.json</code></div>
+          <div class="step" data-s="brain"><i></i>Brain<code>ollama phi3:mini</code></div>
+          <div class="step" data-s="speak"><i></i>Speaker<code>pyttsx3</code></div>
+        </div>
+      </div>
+      <div class="glass card">
+        <h3>Memory agent</h3>
+        <div class="kv">Name: <b id="mem-name">—</b> · Conversations: <b id="mem-count">0</b></div>
+        <ul class="facts" id="facts"><li style="color:var(--muted)">Tell Aira about your family, work or where you live…</li></ul>
+      </div>
+      <div class="glass card">
+        <h3>Mood tracker</h3>
+        <div class="bars" id="bars"></div>
+        <div class="kv" id="mood-summary" style="margin-top:10px"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="about">
+    <div class="glass card"><h3>How it works</h3><ul>
+      <li>Voice activity detection records you only while you speak</li>
+      <li>Whisper transcribes the audio offline</li>
+      <li>Emotion is detected with keyword scoring and a TextBlob sentiment fallback</li>
+      <li>Crisis language triggers a safe response with the 988 Lifeline</li>
+      <li>Memory and mood are injected into the LLM prompt, and the reply is streamed and spoken</li></ul></div>
+    <div class="glass card"><h3>Tech stack</h3><div class="stack">
+      <span>Python 3.13</span><span>Ollama</span><span>phi3:mini</span><span>Whisper</span><span>webrtcvad</span><span>PyAudio</span><span>TextBlob</span><span>pyttsx3</span><span>Multi-agent design</span><span>100% offline</span></div></div>
+    <div class="glass card"><h3>Agents</h3><p>Memory · Mood Tracker · Crisis Detection · Wellness (breathing and grounding exercises) · Indian Culture context. Each is a small, testable module in <code>agents.py</code>, and together they shape a single empathetic reply.</p></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ---------- Emotion detector (ported from aira.py) ----------
+const KEYWORDS = {
+  sad: ["sad","unhappy","depressed","hopeless","cry","lonely","empty","worthless","hurt","grief","miserable","heartbroken","homesick","miss home","miss my"],
+  stressed: ["stressed","overwhelmed","anxious","worried","panic","too much","pressure","exhausted","cant cope","can't cope","deadline","tired"],
+  angry: ["angry","mad","furious","frustrated","hate","unfair","sick of","fed up","annoyed"],
+  happy: ["happy","great","wonderful","excited","joyful","good","grateful","love","amazing","thankful","blessed","promotion","got the job"],
+};
+const POS = ["good","nice","fine","better","glad","calm","proud","fun","enjoy","smile"], NEG = ["bad","awful","terrible","worse","alone","scared","afraid","fail","failed","lost"];
+function detectEmotion(text) {
+  const low = text.toLowerCase(); const scores = {};
+  for (const [e, words] of Object.entries(KEYWORDS)) { const c = words.filter((w) => low.includes(w)).length; if (c) scores[e] = c; }
+  if (Object.keys(scores).length) return Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+  const words = low.split(/\W+/); const pol = (words.filter((w) => POS.includes(w)).length - words.filter((w) => NEG.includes(w)).length) / Math.max(1, words.length) * 5;
+  if (pol < -0.3) return "sad"; if (pol < -0.1) return "stressed"; if (pol > 0.3) return "happy"; return "neutral";
+}
+
+// ---------- Crisis agent (ported from agents.py) ----------
+const CRISIS_WORDS = ["kill myself","end my life","want to die","cant go on","can't go on","no reason to live","better off dead","hurt myself","suicide","end it all","disappear forever"];
+const CONCERN_WORDS = ["hopeless","worthless","nobody cares","all alone","no one loves me","hate myself","cant take it","can't take it","tired of everything"];
+const CRISIS_RESPONSE = "I hear you and I am really glad you are talking to me.\nYou are not alone in this moment.\nPlease reach out to someone who can help right now. You can call or text 988, the Suicide and Crisis Lifeline, available 24 hours a day.\nYou matter and things can get better.";
+const CONCERN_RESPONSE = "I can hear that you are going through something really hard.\nThose feelings are real and valid. You do not have to face this alone.\nI am here with you. Can you tell me more about what is going on?";
+function checkCrisis(text) { const l = text.toLowerCase(); if (CRISIS_WORDS.some((w) => l.includes(w))) return "crisis"; return CONCERN_WORDS.filter((w) => l.includes(w)).length >= 2 ? "concern" : "normal"; }
+
+// ---------- Memory agent ----------
+const memory = { name: "", facts: [], conversations: 0 };
+function extractFacts(text) {
+  const l = text.toLowerCase();
+  for (const t of ["my name is", "i am called", "call me"]) {
+    if (l.includes(t)) { const n = l.split(t)[1].trim().split(/\s+/)[0]?.replace(/[^a-z]/g, ""); if (n) memory.name = n[0].toUpperCase() + n.slice(1); }
+  }
+  const triggers = ["my sister","my brother","my mom","my dad","my mother","my father","my wife","my husband","my friend","my boss","i work","i study","i live","my job","my parents"];
+  for (const s of text.split(/[.!?]/)) { const sl = s.toLowerCase(); if (triggers.some((t) => sl.includes(t)) && s.trim().length > 10 && !memory.facts.includes(s.trim())) memory.facts.push(s.trim()); }
+  memory.facts = memory.facts.slice(-6);
+}
+function renderMemory() {
+  $("mem-name").textContent = memory.name || "—"; $("mem-count").textContent = memory.conversations;
+  $("facts").innerHTML = memory.facts.length ? memory.facts.map((f) => `<li>🧠 ${f.replace(/</g, "&lt;")}</li>`).join("") : '<li style="color:var(--muted)">Tell Aira about your family, work or where you live…</li>';
+}
+
+// ---------- Mood tracker ----------
+const moods = [];
+const MOOD_COLORS = { happy: "var(--green)", neutral: "var(--violet)", stressed: "var(--amber)", sad: "var(--cyan)", angry: "var(--red)" };
+function renderMoods() {
+  const counts = { happy: 0, neutral: 0, stressed: 0, sad: 0, angry: 0 }; moods.slice(-10).forEach((m) => counts[m]++);
+  const max = Math.max(1, ...Object.values(counts));
+  $("bars").innerHTML = Object.entries(counts).map(([k, v]) => `<div class="bar">${k}<div><span style="width:${v / max * 100}%;background:${MOOD_COLORS[k]}"></span></div>${v}</div>`).join("");
+  if (moods.length) { const dom = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]; $("mood-summary").innerHTML = `Recent mood: mostly <b>${dom[0]}</b> (${dom[1]}/${Math.min(10, moods.length)} times)`; }
+  let streak = 0; for (let i = moods.length - 1; i >= 0 && ["sad", "stressed"].includes(moods[i]); i--) streak++;
+  return streak;
+}
+
+// ---------- Brain (rule-based stand-in for the LLM) ----------
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const CULTURE = [
+  [/homesick|miss (home|india|my mom|my family|amma|mom's food)/i, ["Missing home can feel so heavy, especially on festival days or when you crave your mom's cooking.", "Being far from home is hard. Even the smell of chai can bring it all back."]],
+  [/arranged marriage|marriage pressure|get married|rishta/i, ["Marriage pressure from family can feel like everyone has an opinion about your life except you.", "Arranged marriage conversations can be so confusing when you love your family but also want your own choice."]],
+  [/parents|family pressure|log kya kahenge|relatives/i, ["Family expectations come from love, but they can still feel like a weight on your shoulders.", "Balancing what your parents hope for and what you want is one of the hardest things."]],
+  [/nri|visa|h1b|h-1b|opt|green card|abroad/i, ["Visa uncertainty and living abroad take a quiet toll that people back home don't always see.", "NRI life can feel like having one foot in two worlds and not fully belonging to either."]],
+  [/diwali|holi|pongal|onam|festival|ganesh|navratri/i, ["Festivals away from home hit differently. Maybe a small diya or a video call with family could bring a little warmth.", "Celebrating far from home is bittersweet, but your traditions travel with you."]],
+];
+const BY_EMOTION = {
+  sad: ["I'm really sorry you're feeling this way. It makes sense to feel low.", "That sounds painful. I'm right here with you."],
+  stressed: ["That's a lot to carry. Let's slow down for a moment together.", "It sounds overwhelming. You don't have to solve everything at once."],
+  angry: ["That sounds really frustrating, and your feelings are valid.", "I can hear how fed up you are. Anyone would be."],
+  happy: ["That's wonderful! I love hearing this. 😊", "Yay, that makes me so happy for you!"],
+  neutral: ["I'm listening.", "Tell me more, I'm all ears."],
+};
+const FOLLOW = { sad: "Do you want to tell me what's been weighing on you?", stressed: "What feels most urgent right now?", angry: "What happened?", happy: "What made today so good?", neutral: "How has your day been, really?" };
+function brain(text, emotion, streak) {
+  const name = memory.name ? `${memory.name}, ` : "";
+  let reply = BY_EMOTION[emotion] ? pick(BY_EMOTION[emotion]) : pick(BY_EMOTION.neutral);
+  const c = CULTURE.find(([re]) => re.test(text)); if (c) reply += " " + pick(c[1]);
+  if (/my name is|call me|i am called/i.test(text) && memory.name) reply = `It's lovely to meet you, ${memory.name}! ` + (emotion !== "neutral" ? reply : "I'm Aira. How are you feeling today?");
+  else { const useName = name && Math.random() < .5; if (useName && !/^I\b/.test(reply)) reply = reply[0].toLowerCase() + reply.slice(1); reply = (useName ? name : "") + reply + " " + FOLLOW[emotion]; }
+  let wellness = null;
+  if (emotion === "stressed" || streak >= 3) wellness = "Would you like to try box breathing with me? Breathe in for 4, hold for 4, out for 4, hold for 4. I'll show you on screen.";
+  return { reply: reply.replace(/^\w/, (m) => m.toUpperCase()), wellness };
+}
+
+// ---------- UI ----------
+const msgs = $("msgs");
+function addMsg(text, who, meta, cls = "") {
+  const d = document.createElement("div"); d.className = `msg ${who} ${cls}`; d.textContent = text;
+  if (meta) { const m = document.createElement("span"); m.className = "meta"; m.textContent = meta; d.appendChild(m); }
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
+}
+async function runPipe(stages) {
+  const steps = [...document.querySelectorAll(".step")]; steps.forEach((s) => s.classList.remove("active", "done"));
+  for (const s of steps) { if (!stages.includes(s.dataset.s)) continue; s.classList.add("active"); await sleep(260); s.classList.remove("active"); s.classList.add("done"); }
+}
+let voiceOn = true;
+function speak(text) {
+  const orb = $("orb");
+  if (!voiceOn || !("speechSynthesis" in window)) { orb.classList.add("talking"); setTimeout(() => orb.classList.remove("talking"), 1500); return; }
+  speechSynthesis.cancel();
+  setTimeout(() => {
+    const vs = speechSynthesis.getVoices().filter((v) => /^en/i.test(v.lang));
+    const v = vs.find((x) => /en-IN|heera|veena|zira|aria|jenny|samantha|female/i.test(x.name + x.lang)) || vs[0];
+    window.__u = (text.match(/[^.!?\n]+[.!?]*/g) || [text]).map((p, i, a) => { const u = new SpeechSynthesisUtterance(p.trim()); if (v) u.voice = v; u.rate = 0.98; u.pitch = 1.08;
+      if (i === 0) u.onstart = () => orb.classList.add("talking"); if (i === a.length - 1) u.onend = u.onerror = () => orb.classList.remove("talking"); return u; });
+    window.__u.forEach((u) => speechSynthesis.speak(u));
+  }, 100);
+}
+async function handle(text, viaVoice = false) {
+  text = text.trim(); if (!text) return;
+  addMsg(text, "user"); memory.conversations++;
+  const typing = document.createElement("div"); typing.className = "typing"; typing.textContent = "Aira is thinking…"; msgs.appendChild(typing);
+  const emotion = detectEmotion(text); const level = checkCrisis(text);
+  await runPipe(viaVoice ? ["listen", "transcribe", "emotion", "crisis", "memory", "brain", "speak"] : ["emotion", "crisis", "memory", "brain", "speak"]);
+  typing.remove();
+  moods.push(level === "normal" ? emotion : "sad"); const streak = renderMoods();
+  $("mood-pill").textContent = `mood: ${emotion}`; $("mood-pill").style.color = MOOD_COLORS[emotion];
+  if (level !== "normal") { const t = level === "crisis" ? CRISIS_RESPONSE : CONCERN_RESPONSE; addMsg(t, "aira", `crisis agent · level: ${level}`, "crisis"); speak(t); return; }
+  extractFacts(text); renderMemory();
+  const { reply, wellness } = brain(text, emotion, streak);
+  addMsg(reply, "aira", `emotion: ${emotion}${memory.name ? " · remembers: " + memory.name : ""}`);
+  speak(reply);
+  if (wellness) { await sleep(900); const d = addMsg(wellness, "aira", "wellness agent"); d.insertAdjacentHTML("beforeend", '<div class="breath"><div class="ball"></div><span style="font-size:13px;color:var(--muted)">in 4 · hold 4 · out 4 · hold 4</span></div>'); }
+}
+$("form").addEventListener("submit", (e) => { e.preventDefault(); const v = $("input").value; $("input").value = ""; handle(v); });
+$("voice").addEventListener("click", () => { voiceOn = !voiceOn; $("voice").textContent = voiceOn ? "🔊" : "🔈"; if (!voiceOn) speechSynthesis.cancel(); });
+const examples = ["My name is Priya and I feel homesick", "Work deadlines are stressing me out", "My parents keep pushing arranged marriage", "I got the job, I'm so happy!", "I miss Diwali with my family"];
+$("chips").innerHTML = examples.map((t) => `<button class="chip">${t}</button>`).join("");
+$("chips").addEventListener("click", (e) => { if (e.target.classList.contains("chip")) handle(e.target.textContent); });
+
+// Voice input (Web Speech API stands in for Whisper in the browser)
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) $("mic").style.display = "none";
+else {
+  const rec = new SR(); rec.lang = "en-US"; rec.interimResults = false; let on = false;
+  rec.onresult = (e) => handle(e.results[0][0].transcript, true);
+  rec.onend = () => { on = false; $("mic").classList.remove("rec"); $("mic").textContent = "🎙️"; };
+  $("mic").addEventListener("click", () => { if (on) return rec.stop(); try { rec.start(); on = true; $("mic").classList.add("rec"); $("mic").textContent = "● Listening"; } catch (_) {} });
+}
+renderMoods(); renderMemory();
+setTimeout(() => addMsg("Namaste! I'm Aira 🌸 I'm here to listen, without judgment. How are you feeling today?", "aira", "greeting"), 400);
+</script>
+</body>
+</html>

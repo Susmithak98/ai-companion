@@ -1,28 +1,29 @@
-# core/transcriber.py
-import speech_recognition as sr
+"""Transcriber: offline speech-to-text with OpenAI Whisper (loaded once, on first use)."""
 import os
 
-recognizer = sr.Recognizer()
-print("Speech recognizer ready!")
+from config import FFMPEG_DIR, WHISPER_MODEL
 
-def transcribe(audio_filepath):
+_model = None
 
-    if not os.path.exists(audio_filepath):
+
+def _load():
+    global _model
+    if _model is None:
+        if FFMPEG_DIR:
+            os.environ["PATH"] += os.pathsep + FFMPEG_DIR
+        import whisper
+        print(f"Loading Whisper '{WHISPER_MODEL}' model...")
+        _model = whisper.load_model(WHISPER_MODEL)
+        print("✅ Whisper ready!")
+    return _model
+
+
+def transcribe(audio_path) -> str:
+    if not audio_path or not os.path.exists(audio_path):
         return ""
-
-    print("Understanding what you said...")
-
-    with sr.AudioFile(audio_filepath) as source:
-        recognizer.adjust_for_ambient_noise(source, duration=0.1)
-        audio = recognizer.record(source)
-
     try:
-        text = recognizer.recognize_google(audio, language="en-US")
-        print(f"✅ You said: {text}")
-        return text
-    except sr.UnknownValueError:
-        print("Could not understand. Please speak clearly.")
-        return ""
-    except Exception as e:
-        print(f"Error: {e}")
+        result = _load().transcribe(audio_path, fp16=False, language="en")
+        return result["text"].strip()
+    except Exception as exc:  # keep the conversation going even if one clip fails
+        print(f"Transcription error: {exc}")
         return ""

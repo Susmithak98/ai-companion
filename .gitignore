@@ -1,6 +1,8 @@
 venv/
 venv311/
+.venv/
 outputs/
+data/
 voice_samples/
 __pycache__/
 *.pyc
