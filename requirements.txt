@@ -1,11 +1,9 @@
-# Voice input
+# Core
+requests==2.32.3
+textblob==0.18.0.post0
+
+# Voice mode (local)
 pyaudio==0.2.14
 webrtcvad==2.0.10
 openai-whisper==20240930
-
-# Understanding + replies
-textblob==0.18.0.post0
-requests==2.32.3
-
-# Voice output
 pyttsx3==2.98

@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements-dev.txt
+      - name: Lint
+        run: ruff check .
+      - name: Tests
+        run: pytest -q
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/susmithak98/aira-api
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t $IMAGE:${{ github.sha }} -t $IMAGE:latest .
+      - name: Smoke test
+        run: |
+          docker run -d -p 8080:8080 --name aira $IMAGE:${{ github.sha }}
+          for i in $(seq 1 20); do curl -fs http://localhost:8080/health && exit 0; sleep 1; done
+          docker logs aira; exit 1
+      - name: Push to GHCR
+        if: github.event_name == 'push'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest

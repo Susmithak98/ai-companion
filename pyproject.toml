@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aira-companion"
+version = "2.0.0"
+description = "Aira: an empathetic, culturally aware AI voice companion that runs on a local LLM"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Susmitha Kotharu" }]
+dependencies = [
+    "requests>=2.32",
+    "textblob>=0.18",
+]
+
+[project.optional-dependencies]
+voice = ["pyaudio>=0.2.14", "webrtcvad>=2.0.10", "openai-whisper>=20240930", "pyttsx3>=2.98"]
+api = ["fastapi>=0.115", "uvicorn[standard]>=0.30"]
+dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.6", "fastapi>=0.115"]
+
+[project.scripts]
+aira = "main:main"
+
+[tool.setuptools]
+py-modules = ["main", "api", "agents", "aira", "config", "storage", "logging_setup"]
+packages = ["core"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B008", "UP007", "UP045"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

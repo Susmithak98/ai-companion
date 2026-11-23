@@ -1,0 +1,5 @@
+# API service (used by the Docker image; no audio libraries needed)
+requests==2.32.3
+textblob==0.18.0.post0
+fastapi==0.115.6
+uvicorn[standard]==0.32.1

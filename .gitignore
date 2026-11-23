@@ -12,3 +12,9 @@ __pycache__/
 # personal conversation data stays local
 aira_memory.json
 aira_moods.csv
+*.db
+*.db-wal
+*.db-shm
+.ruff_cache/
+*.egg-info/
+build/

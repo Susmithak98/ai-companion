@@ -1,0 +1,33 @@
+# Full stack: Ollama (local LLM) + Aira API.  Run:  docker compose up -d
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes: [ollama:/root/.ollama]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      retries: 10
+
+  model-pull:            # downloads the model once, then exits
+    image: ollama/ollama:latest
+    depends_on: { ollama: { condition: service_healthy } }
+    environment: { OLLAMA_HOST: "ollama:11434" }
+    entrypoint: ["ollama", "pull", "phi3:mini"]
+    volumes: [ollama:/root/.ollama]
+
+  aira-api:
+    build: .
+    depends_on:
+      ollama: { condition: service_healthy }
+      model-pull: { condition: service_completed_successfully }
+    environment:
+      AIRA_OLLAMA_URL: http://ollama:11434
+      AIRA_API_KEY: ${AIRA_API_KEY:-change-me}
+      AIRA_RATE_LIMIT_PER_MINUTE: "30"
+    ports: ["8080:8080"]
+    volumes: [aira-data:/data]
+    restart: unless-stopped
+
+volumes:
+  ollama:
+  aira-data:

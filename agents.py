@@ -1,67 +1,48 @@
 """Aira's helper agents: Memory, Mood Tracker, Crisis Detection, Wellness, Indian Culture.
 
-Every agent is a small pure-Python module so it can be unit tested without a microphone or LLM.
+Each agent is a small pure-Python unit. Memory and mood are stored per user in SQLite (storage.py),
+so the same agents serve the local CLI (user "local") and many API users at once.
 """
-import csv
-import json
-import os
 import random
 import re
 from datetime import datetime
+from typing import Optional
 
-from config import DATA_DIR, MAX_FACTS, MEMORY_FILE, MOOD_FILE
+import storage
 
-
-def _ensure_data_dir():
-    os.makedirs(DATA_DIR, exist_ok=True)
+LOCAL_USER = "local"
 
 
 # ============================================================
 # MEMORY AGENT
 # ============================================================
 
-def _empty_memory():
-    return {"user_name": "", "facts": [], "last_seen": "", "total_conversations": 0}
+def load_memory(user_id: str = LOCAL_USER) -> dict:
+    return storage.get_memory(user_id)
 
 
-def load_memory():
-    if os.path.exists(MEMORY_FILE):
-        try:
-            with open(MEMORY_FILE, encoding="utf-8") as f:
-                return {**_empty_memory(), **json.load(f)}
-        except (json.JSONDecodeError, OSError):
-            pass
-    return _empty_memory()
-
-
-def save_memory(memory):
-    _ensure_data_dir()
-    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(memory, f, indent=2)
-
-
-def remember_fact(fact):
-    memory = load_memory()
+def remember_fact(fact: str, user_id: str = LOCAL_USER) -> None:
+    memory = storage.get_memory(user_id)
     if fact not in memory["facts"]:
-        memory["facts"] = (memory["facts"] + [fact])[-MAX_FACTS:]
-        save_memory(memory)
+        memory["facts"].append(fact)
+        storage.save_memory(user_id, memory)
 
 
-def set_user_name(name):
-    memory = load_memory()
+def set_user_name(name: str, user_id: str = LOCAL_USER) -> None:
+    memory = storage.get_memory(user_id)
     memory["user_name"] = name
-    save_memory(memory)
+    storage.save_memory(user_id, memory)
 
 
-def update_last_seen():
-    memory = load_memory()
+def update_last_seen(user_id: str = LOCAL_USER) -> None:
+    memory = storage.get_memory(user_id)
     memory["last_seen"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     memory["total_conversations"] += 1
-    save_memory(memory)
+    storage.save_memory(user_id, memory)
 
 
-def get_memory_context():
-    memory = load_memory()
+def get_memory_context(user_id: str = LOCAL_USER) -> str:
+    memory = storage.get_memory(user_id)
     parts = []
     if memory["user_name"]:
         parts.append(f"User's name is {memory['user_name']}.")
@@ -77,53 +58,39 @@ FACT_TRIGGERS = ["my sister", "my brother", "my mom", "my dad", "my amma", "my n
                  "my husband", "my friend", "my boss", "i work", "i study", "i live", "my job"]
 
 
-def extract_facts(text):
+def extract_facts(text: str, user_id: str = LOCAL_USER) -> None:
     """Remember the user's name and personal facts mentioned in the message."""
     match = NAME_PATTERN.search(text)
     if match:
-        set_user_name(match.group(1).capitalize())
+        set_user_name(match.group(1).capitalize(), user_id)
     for sentence in re.split(r"[.!?]", text):
         low = sentence.lower()
         if len(sentence.strip()) > 10 and any(t in low for t in FACT_TRIGGERS):
-            remember_fact(sentence.strip())
+            remember_fact(sentence.strip(), user_id)
 
 
 # ============================================================
 # MOOD TRACKER AGENT
 # ============================================================
 
-def log_mood(emotion, user_text=""):
-    _ensure_data_dir()
-    new_file = not os.path.exists(MOOD_FILE)
-    with open(MOOD_FILE, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        if new_file:
-            writer.writerow(["date", "time", "emotion", "what_user_said"])
-        now = datetime.now()
-        writer.writerow([now.strftime("%Y-%m-%d"), now.strftime("%H:%M"), emotion, user_text[:100]])
+def log_mood(emotion: str, user_text: str = "", user_id: str = LOCAL_USER) -> None:
+    storage.log_mood(user_id, emotion, user_text)
 
 
-def _read_moods():
-    if not os.path.exists(MOOD_FILE):
-        return []
-    with open(MOOD_FILE, encoding="utf-8") as f:
-        return list(csv.DictReader(f))
-
-
-def get_mood_summary():
-    recent = _read_moods()[-10:]
+def get_mood_summary(user_id: str = LOCAL_USER) -> str:
+    recent = storage.recent_moods(user_id, 10)
     if not recent:
         return ""
-    counts = {}
+    counts: dict = {}
     for row in recent:
         counts[row["emotion"]] = counts.get(row["emotion"], 0) + 1
     dominant = max(counts, key=counts.get)
     return f"Recent mood: mostly {dominant} ({counts[dominant]}/{len(recent)} times)."
 
 
-def check_consecutive_sad():
+def check_consecutive_sad(user_id: str = LOCAL_USER) -> int:
     count = 0
-    for row in reversed(_read_moods()):
+    for row in reversed(storage.recent_moods(user_id, 50)):
         if row["emotion"] in ("sad", "stressed", "crisis"):
             count += 1
         else:
@@ -238,7 +205,7 @@ INDIAN_SCENARIOS = {
 }
 
 
-def detect_indian_scenario(text):
+def detect_indian_scenario(text: str) -> tuple[Optional[str], Optional[str]]:
     low = text.lower()
     for scenario, data in INDIAN_SCENARIOS.items():
         if any(k in low for k in data["keywords"]):
